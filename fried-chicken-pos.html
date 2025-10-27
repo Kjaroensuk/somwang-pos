@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ระบบจัดการร้านไก่ทอด (POS)</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Heroicons (outline) -->
+  <script src="https://unpkg.com/heroicons@2.1.3/24/outline/index.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+  <style>
+    body { font-family: 'Kanit','Inter',sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .page, .report-tab-content { display: none; }
+    .page.active, .report-tab-content.active { display: block; }
+    #page-loading.active { display: flex; }
+    .report-tab-btn { padding: .75rem 1.25rem; font-weight: 600; border-bottom: 3px solid transparent; color: #6b7280; }
+    .report-tab-btn.active { color: #dc2626; border-bottom-color: #dc2626; }
+  </style>
+</head>
+<body class="bg-gray-100">
+
+  <!-- Header -->
+  <header class="bg-white shadow-md sticky top-0 z-50">
+    <div class="container mx-auto max-w-7xl px-4">
+      <div class="flex justify-between items-center py-3">
+
+        <!-- ชื่อร้าน + อีเมล ใต้ชื่อ -->
+        <div class="flex flex-col">
+          <h1 class="text-xl md:text-2xl font-bold text-red-800 whitespace-nowrap">ไก่ทอดสมหวัง อยุธยา สาขาพระราม 5</h1>
+
+          <!-- badge แสดงอีเมลหลังล็อกอิน -->
+          <span
+            id="auth-user-email"
+            class="inline-flex items-center gap-1 text-sm text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md mt-1 w-fit"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                 stroke="currentColor" class="w-4 h-4 text-red-600">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+            </svg>
+            <span class="font-semibold text-red-600">ผู้ใช้:</span>
+            <span id="auth-email-text">กำลังโหลด...</span>
+          </span>
+        </div>
+
+        <!-- เมนูขวา (Desktop) -->
+        <div class="hidden md:flex items-center space-x-2">
+          <div class="hidden md:flex space-x-1 lg:space-x-2 flex-shrink-0 mr-2">
+            <button onclick="App.showPage('page-pos')" data-page="page-pos"
+                    class="nav-btn bg-red-600 text-white px-3 lg:px-4 py-2 rounded-lg shadow hover:bg-red-700 transition whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block -mt-1 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"/></svg>
+              ขาย
+            </button>
+            <button onclick="App.showPage('page-manage-products')" data-page="page-manage-products"
+                    class="nav-btn bg-white text-gray-700 px-3 lg:px-4 py-2 rounded-lg shadow hover:bg-gray-50 transition whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block -mt-1 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/></svg>
+              สินค้า
+            </button>
+            <button onclick="App.showPage('page-manage-inventory')" data-page="page-manage-inventory"
+                    class="nav-btn bg-white text-gray-700 px-3 lg:px-4 py-2 rounded-lg shadow hover:bg-gray-50 transition whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block -mt-1 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75M3.75 6.375H20.25"/></svg>
+              สต็อก
+            </button>
+            <button onclick="App.showPage('page-manage-settings')" data-page="page-manage-settings"
+                    class="nav-btn bg-white text-gray-700 px-3 lg:px-4 py-2 rounded-lg shadow hover:bg-gray-50 transition whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block -mt-1 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.227l.128-.054m-2.26 2.331.026.16a1.65 1.65 0 0 0 1.52 1.51l.159.026m0-2.942.282.565m1.11 1.11.283-.565M9.22 7.239l-.128.054a1.65 1.65 0 0 0-1.519 1.51l-.026.16M9.092 7.294l.128-.054a1.65 1.65 0 0 1 1.52-1.51l.159-.026m1.11 1.11 1.11.283c.55.138 1.02.63.91 1.181l-.054.129m-1.956-.62.054.128m0 0 1.11 1.11.128.054m-1.1-1.11.054.128m.62 1.956.054.129m0 0-.054.128m2.26-2.331.054.128m-2.26 2.331-.054.128"/></svg>
+              ตั้งค่า
+            </button>
+            <button onclick="App.showPage('page-reports')" data-page="page-reports"
+                    class="nav-btn bg-white text-gray-700 px-3 lg:px-4 py-2 rounded-lg shadow hover:bg-gray-50 transition whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block -mt-1 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z"/></svg>
+              รายงาน
+            </button>
+          </div>
+
+          <button onclick="App.logout()" class="bg-gray-200 text-gray-800 px-3 py-2 rounded-lg shadow hover:bg-gray-300 whitespace-nowrap">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block -mt-1 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15"/></svg>
+            ออกจากระบบ
+          </button>
+        </div>
+
+        <!-- Mobile toggle -->
+        <button class="md:hidden" onclick="App.toggleMobileMenu()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/></svg>
+        </button>
+      </div>
+
+      <!-- Mobile Menu -->
+      <div id="mobile-menu" class="hidden md:hidden pb-3 space-y-2">
+        <button onclick="App.showPage('page-pos')" data-page="page-pos" class="nav-btn-mobile w-full text-left bg-red-600 text-white px-4 py-2 rounded-lg shadow">ขาย (POS)</button>
+        <button onclick="App.showPage('page-manage-products')" data-page="page-manage-products" class="nav-btn-mobile w-full text-left bg-white text-gray-700 px-4 py-2 rounded-lg shadow">จัดการสินค้า</button>
+        <button onclick="App.showPage('page-manage-inventory')" data-page="page-manage-inventory" class="nav-btn-mobile w-full text-left bg-white text-gray-700 px-4 py-2 rounded-lg shadow">สต็อก</button>
+        <button onclick="App.showPage('page-manage-settings')" data-page="page-manage-settings" class="nav-btn-mobile w-full text-left bg-white text-gray-700 px-4 py-2 rounded-lg shadow">ตั้งค่า</button>
+        <button onclick="App.showPage('page-reports')" data-page="page-reports" class="nav-btn-mobile w-full text-left bg-white text-gray-700 px-4 py-2 rounded-lg shadow">รายงาน</button>
+        <button onclick="App.logout()" class="w-full text-left bg-white text-gray-700 px-4 py-2 rounded-lg shadow">ออกจากระบบ</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto max-w-7xl p-4">
+
+    <!-- Page: Loading -->
+    <div id="page-loading" class="page active items-center justify-center min-h-[70vh]">
+      <div class="text-center">
+        <svg class="animate-spin h-10 w-10 text-red-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="mt-4 text-lg text-gray-600">กำลังโหลดข้อมูล... <span id="auth-status"></span></p>
+        <p class="text-sm text-gray-500">App ID: <span id="app-id-display"></span></p>
+        <p class="text-sm text-gray-500">User ID: <span id="user-id-display"></span></p>
+      </div>
+    </div>
+
+    <!-- Page: Sales Channel Select -->
+    <div id="page-sales-channel-select" class="page">
+      <h2 class="text-2xl font-semibold mb-6 text-center">เลือกช่องทางการขาย</h2>
+      <div id="sales-channel-buttons" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <p class="text-gray-500 col-span-full text-center">กำลังรอข้อมูลช่องทางการขาย...</p>
+      </div>
+    </div>
+
+    <!-- Page: POS -->
+    <div id="page-pos" class="page">
+      <button onclick="App.showPage('page-sales-channel-select')" class="mb-4 bg-gray-500 text-white px-4 py-2 rounded-lg shadow hover:bg-gray-600">&larr; กลับไปเลือกช่องทาง</button>
+      <h2 class="text-3xl font-bold mb-4">หน้าขาย (POS) - <span id="current-sales-channel" class="text-red-600"></span></h2>
+      <div class="mb-4 bg-green-100 border border-green-300 text-green-800 p-3 rounded-lg text-lg">
+        ยอดขายวันนี้ (ช่องทางนี้): <span id="pos-channel-today-total" class="font-bold">0.00 บาท</span>
+      </div>
+      <div class="flex flex-col lg:flex-row gap-6">
+        <div class="lg:w-2/3">
+          <div class="bg-white p-4 rounded-lg shadow-lg">
+            <h3 class="text-xl font-semibold mb-4">เลือกเมนู</h3>
+            <div id="pos-product-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+          </div>
+        </div>
+        <div class="lg:w-1/3">
+          <div class="bg-white p-6 rounded-lg shadow-lg sticky top-24">
+            <h3 class="text-2xl font-semibold mb-4">สรุปรายการ</h3>
+            <p class="text-gray-600 mb-4">วันที่: <span id="current-datetime"></span></p>
+            <div id="cart-items" class="space-y-3 max-h-60 overflow-y-auto no-scrollbar pr-2">
+              <p id="cart-empty-msg" class="text-gray-500">ยังไม่มีสินค้าในตะกร้า</p>
+            </div>
+            <hr class="my-4">
+            <div class="space-y-2 text-lg">
+              <div class="flex justify-between font-semibold">
+                <span>รวมทั้งหมด</span>
+                <span id="cart-total" class="text-red-700">0.00 บาท</span>
+              </div>
+            </div>
+            <button onclick="App.confirmSale()" class="mt-6 w-full bg-green-600 text-white py-3 rounded-lg text-lg font-bold shadow-lg hover:bg-green-700 transition disabled:opacity-50" disabled>
+              ยืนยันการขาย
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Manage Inventory (Dynamic) -->
+    <div id="page-manage-inventory" class="page">
+      <h2 class="text-3xl font-bold mb-6">จัดการสต็อก</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- คงเหลือ -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+          <h3 class="text-xl font-semibold mb-4">สต็อกคงเหลือ</h3>
+          <div id="inventory-balance" class="space-y-4"></div>
+        </div>
+
+        <!-- เติมสต็อก -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+          <h3 class="text-xl font-semibold mb-4">เติมสต็อก</h3>
+          <form id="add-stock-form" class="space-y-4"></form>
+          <button id="add-stock-submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg shadow hover:bg-green-700 mt-4">+ เติมสต็อก</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Manage Products -->
+    <div id="page-manage-products" class="page">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold">จัดการสินค้า</h2>
+        <button onclick="App.showProductForm(null)" class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-700">+ เพิ่มสินค้าใหม่</button>
+      </div>
+      <div id="product-list" class="bg-white rounded-lg shadow-lg overflow-hidden"></div>
+    </div>
+
+    <!-- Page: Settings (add dynamic stock items) -->
+    <div id="page-manage-settings" class="page">
+      <h2 class="text-3xl font-bold mb-6">ตั้งค่า</h2>
+      <div class="space-y-6 max-w-3xl mx-auto">
+
+        <!-- ช่องทางการขาย + วัตถุดิบอื่น -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+          <form id="settings-channels-form">
+            <h3 class="text-xl font-semibold mb-4">ช่องทางการขาย</h3>
+            <div id="sales-channels-list" class="space-y-2 mb-4"></div>
+            <button type="button" onclick="App.addSalesChannelInput()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">+ เพิ่มช่องทาง</button>
+
+            <h3 class="text-xl font-semibold mb-4 mt-6">วัตถุดิบอื่นๆ (ต้นทุน)</h3>
+            <div id="other-materials-list" class="space-y-2 mb-4"></div>
+            <button type="button" onclick="App.addOtherMaterialInput()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">+ เพิ่มวัตถุดิบ</button>
+
+            <hr class="my-6">
+
+            <!-- ชนิดสต็อก (ใหม่) -->
+            <h3 class="text-xl font-semibold mb-2">ชนิดสต็อก (กำหนดเอง)</h3>
+            <p class="text-sm text-gray-500 mb-3">เช่น ปีกไก่/ชิ้น, น่องไก่/ชิ้น, ไก่ทั้งตัว/ตัว, ข้าวเหนียว/ห่อ</p>
+            <div id="stock-items-list" class="space-y-2 mb-4"></div>
+            <button type="button" onclick="App.addStockItemInput()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">+ เพิ่มชนิดสต็อก</button>
+
+            <hr class="my-6">
+            <button type="submit" class="w-full bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700">บันทึกการตั้งค่า</button>
+          </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-2xl">
+          <h3 class="text-xl font-semibold mb-4">ข้อมูลผู้ใช้</h3>
+          <p class="text-sm text-gray-600">App ID:</p>
+          <p id="settings-app-id" class="text-gray-900 font-mono bg-gray-100 p-2 rounded break-all"></p>
+          <p class="text-sm text-gray-600 mt-2">User ID:</p>
+          <p id="settings-user-id" class="text-gray-900 font-mono bg-gray-100 p-2 rounded break-all"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Reports -->
+    <div id="page-reports" class="page">
+      <h2 class="text-3xl font-bold mb-4">รายงาน</h2>
+      <div class="bg-white rounded-lg shadow-lg">
+        <div class="border-b border-gray-200">
+          <nav class="flex" aria-label="Tabs">
+            <button id="report-tab-daily-btn" onclick="App.showReportTab('daily')" class="report-tab-btn active">รายงานประจำวัน</button>
+            <button id="report-tab-summary-btn" onclick="App.showReportTab('summary')" class="report-tab-btn">รายงานสรุป</button>
+          </nav>
+        </div>
+
+        <!-- Daily -->
+        <div id="report-tab-daily" class="report-tab-content active p-6">
+          <div class="bg-white mb-6 flex flex-wrap items-center gap-4">
+            <div>
+              <label for="report-date" class="block text-sm font-medium text-gray-700">เลือกวันที่</label>
+              <input type="date" id="report-date" class="mt-1 block w-full md:w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+            </div>
+            <button onclick="App.loadReport()" class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-700 self-end">ดูรายงาน</button>
+            <button onclick="App.exportReportToExcel()" class="bg-green-600 text-white px-5 py-2 rounded-lg shadow hover:bg-green-700 self-end">Export to Excel</button>
+          </div>
+          <div id="report-content" class="min-h-[20vh]"><p class="text-gray-500">กรุณาเลือกวันที่เพื่อดูรายงาน</p></div>
+          <form id="report-deductions-form" class="mt-6 border-t pt-6" style="display: none;">
+            <h3 class="text-2xl font-bold mb-6">กรอกค่าใช้จ่าย (GP, ส่วนลด)</h3>
+            <div id="report-deductions-channels" class="space-y-6"></div>
+            <button type="submit" class="mt-6 w-full bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700">บันทึกค่าใช้จ่าย</button>
+          </form>
+        </div>
+
+        <!-- Summary -->
+        <div id="report-tab-summary" class="report-tab-content p-6">
+          <div class="bg-white mb-6 flex flex-wrap items-center gap-4">
+            <div>
+              <label for="report-date-from" class="block text-sm font-medium text-gray-700">ตั้งแต่วันที่</label>
+              <input type="date" id="report-date-from" class="mt-1 block w-full md:w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+            </div>
+            <div>
+              <label for="report-date-to" class="block text-sm font-medium text-gray-700">ถึงวันที่</label>
+              <input type="date" id="report-date-to" class="mt-1 block w-full md:w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+            </div>
+            <button onclick="App.loadSummaryReport()" class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-700 self-end">ดูรายงานสรุป</button>
+          </div>
+
+          <div id="summary-total-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>
+          <div class="grid grid-cols-1 lg:grid-cols-1 gap-8 mt-8">
+            <div>
+              <h3 class="text-xl font-semibold mb-4">ยอดขายรวมก่อนหักค่าใช้จ่าย (แยกตามช่องทาง)</h3>
+              <div class="min-h-[400px] h-96"><canvas id="summary-chart-gross-canvas"></canvas></div>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold mb-4">ยอดขายรวมหลังหักค่าใช้จ่าย</h3>
+              <div class="min-h-[400px] h-96"><canvas id="summary-chart-net-canvas"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            <div>
+              <h3 class="text-xl font-semibold mb-4">รายงานสินค้าขายดี</h3>
+              <div id="summary-best-sellers" class="bg-white rounded-lg shadow-sm max-h-96 overflow-y-auto"><p class="text-gray-500 p-4 text-center">กรุณากด "ดูรายงานสรุป"</p></div>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold mb-4">ยอดขายตามช่องทางการขาย</h3>
+              <div id="summary-by-channel" class="bg-white rounded-lg shadow-sm max-h-96 overflow-y-auto"><p class="text-gray-500 p-4 text-center">กรุณากด "ดูรายงานสรุป"</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Product Form -->
+  <div id="modal-product-form" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <form id="product-form">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 id="product-form-title" class="text-2xl font-semibold">เพิ่มสินค้าใหม่</h3>
+            <button type="button" onclick="App.closeProductForm()" class="text-gray-400 hover:text-gray-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <input type="hidden" id="product-id">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="product-name" class="block text-sm font-medium text-gray-700">ชื่อสินค้า</label>
+              <input type="text" id="product-name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+            </div>
+            <div>
+              <label for="product-cost" class="block text-sm font-medium text-gray-700">ต้นทุน (บาท)</label>
+              <input type="number" id="product-cost" min="0" step="0.01" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+            </div>
+          </div>
+
+          <!-- การตัดสต็อก (ไดนามิก) -->
+          <div class="mt-4">
+            <p class="block text-sm font-medium text-gray-700 mb-2">การตัดสต็อก</p>
+            <div id="product-deduct-dynamic" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+          </div>
+
+          <div class="mt-4">
+            <p class="block text-sm font-medium text-gray-700 mb-2">ราคาขาย (บาท) ตามช่องทาง</p>
+            <div id="product-prices-inputs" class="space-y-2"></div>
+          </div>
+
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-gray-700">รูปภาพสินค้า (URL)</label>
+            <div class="mt-2 flex items-start space-x-4">
+              <img id="product-image-preview" src="https://placehold.co/100x100/e2e8f0/cbd5e0?text=รูป" alt="Preview" class="w-24 h-24 rounded-md object-cover bg-gray-200 flex-shrink-0">
+              <div class="flex-grow">
+                <input type="url" id="product-image-url-input" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="https://example.com/image.png"
+                       oninput="document.getElementById('product-image-preview').src = this.value || 'https://placehold.co/100x100/e2e8f0/cbd5e0?text=รูป'">
+                <p class="text-sm text-gray-500 mt-1">วาง URL ของรูปภาพที่นี่</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+          <button type="button" onclick="App.closeProductForm()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">ยกเลิก</button>
+          <button type="submit" class="bg-red-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-red-700">บันทึกสินค้า</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Message -->
+  <div id="modal-message" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-[100] hidden p-4">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm">
+      <div class="p-6 text-center">
+        <div id="modal-message-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100"></div>
+        <h3 id="modal-message-title" class="text-lg font-medium text-gray-900 mt-4"></h3>
+        <p id="modal-message-text" class="text-sm text-gray-600 mt-2"></p>
+        <button onclick="App.closeMessageModal()" class="mt-6 w-full bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
+      onSnapshot, collection, serverTimestamp, increment, writeBatch,
+      setLogLevel, query, where, getDocs, documentId, runTransaction
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // ---------- Firebase Config ----------
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJu7wfnlsAYPKjaVnhc5DNrLEJQgNDd3Q",
+      authDomain: "pos-project-a1e47.firebaseapp.com",
+      projectId: "pos-project-a1e47",
+      storageBucket: "pos-project-a1e47.firebasestorage.app",
+      messagingSenderId: "841375598650",
+      appId: "1:841375598650:web:c88e08e4deab8a0eba4d03",
+      measurementId: "G-7PHC2ELKB4"
+    };
+
+    // ---------- App Boot ----------
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const app   = initializeApp(firebaseConfig);
+    const auth  = getAuth(app);
+    const db    = getFirestore(app);
+    setLogLevel('debug');
+
+    // ---------- State ----------
+    let userId = null;
+
+    // stockItems: [{key:'wing', label:'ปีกไก่', unit:'ชิ้น'}, ...]
+    const DEFAULT_STOCK_ITEMS = [
+      { key: 'wing',        label: 'ปีกไก่',    unit: 'ชิ้น' },
+      { key: 'drumstick',   label: 'น่องไก่',   unit: 'ชิ้น' },
+      { key: 'whole',       label: 'ไก่',       unit: 'ตัว'  },
+      { key: 'stickyRice',  label: 'ข้าวเหนียว', unit: 'ห่อ' }
+    ];
+
+    let state = {
+      settings: { salesChannels: [], otherMaterials: [], stockItems: [] },
+      inventory: {},   // { [key]: number }
+      products: [],
+      cart: [],
+      currentChannel: null,
+      activePage: 'page-loading',
+      reportCache: { sales: [], deductions: {} }
+    };
+
+    let summaryChartGrossInstance = null, summaryChartNetInstance = null;
+    let unsubSettings = () => {}, unsubInventory = () => {}, unsubProducts = () => {};
+
+    // ---------- UI refs ----------
+    const ui = {
+      loadingPage: document.getElementById('page-loading'),
+      authStatus: document.getElementById('auth-status'),
+      appIdDisplay: document.getElementById('app-id-display'),
+      userIdDisplay: document.getElementById('user-id-display'),
+      pages: document.querySelectorAll('.page'),
+      mobileMenu: document.getElementById('mobile-menu'),
+      navButtonsDesktop: document.querySelectorAll('.nav-btn'),
+      navButtonsMobile: document.querySelectorAll('.nav-btn-mobile'),
+
+      salesChannelButtons: document.getElementById('sales-channel-buttons'),
+      currentSalesChannel: document.getElementById('current-sales-channel'),
+      posProductList: document.getElementById('pos-product-list'),
+      posChannelTodayTotal: document.getElementById('pos-channel-today-total'),
+      currentDatetime: document.getElementById('current-datetime'),
+
+      cartItems: document.getElementById('cart-items'),
+      cartEmptyMsg: document.getElementById('cart-empty-msg'),
+      cartTotal: document.getElementById('cart-total'),
+      confirmSaleBtn: document.querySelector('#page-pos button[onclick="App.confirmSale()"]'),
+
+      // Inventory dyn
+      inventoryBalance: document.getElementById('inventory-balance'),
+      addStockForm: document.getElementById('add-stock-form'),
+      addStockSubmit: document.getElementById('add-stock-submit'),
+
+      // Reports
+      reportDate: document.getElementById('report-date'),
+      reportContent: document.getElementById('report-content'),
+      reportDeductionsForm: document.getElementById('report-deductions-form'),
+      reportDeductionsChannels: document.getElementById('report-deductions-channels'),
+      reportTabDailyBtn: document.getElementById('report-tab-daily-btn'),
+      reportTabSummaryBtn: document.getElementById('report-tab-summary-btn'),
+      reportTabDaily: document.getElementById('report-tab-daily'),
+      reportTabSummary: document.getElementById('report-tab-summary'),
+      reportDateFrom: document.getElementById('report-date-from'),
+      reportDateTo: document.getElementById('report-date-to'),
+      summaryTotalCards: document.getElementById('summary-total-cards'),
+      summaryChartGrossCanvas: document.getElementById('summary-chart-gross-canvas'),
+      summaryChartNetCanvas: document.getElementById('summary-chart-net-canvas'),
+      summaryBestSellers: document.getElementById('summary-best-sellers'),
+      summaryByChannel: document.getElementById('summary-by-channel'),
+
+      // Products
+      productList: document.getElementById('product-list'),
+      productModal: document.getElementById('modal-product-form'),
+      productForm: document.getElementById('product-form'),
+      productFormTitle: document.getElementById('product-form-title'),
+      productId: document.getElementById('product-id'),
+      productName: document.getElementById('product-name'),
+      productCost: document.getElementById('product-cost'),
+      productDeductDynamic: document.getElementById('product-deduct-dynamic'),
+      productPricesInputs: document.getElementById('product-prices-inputs'),
+      productImagePreview: document.getElementById('product-image-preview'),
+      productImageUrlInput: document.getElementById('product-image-url-input'),
+
+      // Settings
+      settingsChannelsList: document.getElementById('sales-channels-list'),
+      settingsMaterialsList: document.getElementById('other-materials-list'),
+      stockItemsList: document.getElementById('stock-items-list'),
+      settingsAppId: document.getElementById('settings-app-id'),
+      settingsUserId: document.getElementById('settings-user-id'),
+
+      // Message
+      messageModal: document.getElementById('modal-message'),
+      messageIcon: document.getElementById('modal-message-icon'),
+      messageTitle: document.getElementById('modal-message-title'),
+      messageText: document.getElementById('modal-message-text'),
+
+      // email
+      authEmailText: document.getElementById('auth-email-text'),
+    };
+
+    const paths = {
+      settings: () => `artifacts/${appId}/users/${userId}/settings/config`,
+      inventory: () => `artifacts/${appId}/users/${userId}/inventory/stock`,
+      products:  () => `artifacts/${appId}/users/${userId}/products`,
+      productDoc:(id) => `artifacts/${appId}/users/${userId}/products/${id}`,
+      sales:     () => `artifacts/${appId}/users/${userId}/sales`,
+      saleDoc:   (id) => `artifacts/${appId}/users/${userId}/sales/${id}`,
+      deductionsCollection: () => `artifacts/${appId}/users/${userId}/report_deductions`,
+      deductions:(dateStr)=> `artifacts/${appId}/users/${userId}/report_deductions/${dateStr}`,
+      // ตัวนับต่อช่องทาง-ต่อวัน
+      orderCounterDoc:(channel, dateStr)=> `artifacts/${appId}/users/${userId}/order_counters/${channel}_${dateStr}`,
+    };
+
+    const channelColors = {
+      'หน้าร้าน': 'rgba(59,130,246,0.7)',
+      'Grab': 'rgba(4,120,87,0.7)',
+      'ShopeeFood': 'rgba(249,115,22,0.7)',
+      'Line man': 'rgba(74,222,128,0.7)',
+      'default': 'rgba(239,68,68,0.7)',
+      'other1': 'rgba(139,92,246,0.7)',
+      'other2': 'rgba(236,72,153,0.7)',
+      'other3': 'rgba(16,185,129,0.7)',
+    };
+
+    // ---------- Helpers (OrderID) ----------
+    const fmtDate = (d=new Date())=>{
+      const y=d.getFullYear();
+      const m=String(d.getMonth()+1).padStart(2,'0');
+      const dd=String(d.getDate()).padStart(2,'0');
+      return `${y}${m}${dd}`;
+    };
+    const pad4 = (n)=> String(n).padStart(4,'0');
+    const channelCode = (name='')=>{
+      const map = {
+        'หน้าร้าน':'STORE',
+        'Grab':'GRAB',
+        'ShopeeFood':'SHOPEE',
+        'Line man':'LINEMAN',
+      };
+      if (map[name]) return map[name];
+      const cleaned = (name||'CHAN').toUpperCase().replace(/[^A-Z0-9]/g,'');
+      return (cleaned || 'CHAN').slice(0,8);
+    };
+
+    // --- Date helpers (LOCAL) ---
+    const parseLocalDate = (ymd /* 'YYYY-MM-DD' */) => {
+      const [y, m, d] = ymd.split('-').map(Number);
+      return new Date(y, (m - 1), d, 0, 0, 0, 0); // LOCAL 00:00
+    };
+    const endOfLocalDate = (ymd) => {
+      const dt = parseLocalDate(ymd);
+      dt.setHours(23, 59, 59, 999);             // LOCAL 23:59:59.999
+      return dt;
+    };
+    const formatLocalYMD = (dt) => {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const d = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+
+    const App = {
+      init() {
+        ui.appIdDisplay.textContent = appId;
+
+        this.bindEvents();
+        this.initAuth();
+        this.updateTime();
+        setInterval(this.updateTime, 30000);
+
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        ui.reportDate.value = ui.reportDateTo.value = formatLocalYMD(today);
+        ui.reportDateFrom.value = formatLocalYMD(firstDay);
+
+        // กัน error เงียบ
+        window.addEventListener("error", (e) => {
+          console.error("Global error:", e.message, e.error);
+          if (ui.authStatus) ui.authStatus.textContent = `Error: ${e.message}`;
+        });
+      },
+
+      async initAuth() {
+        try {
+          ui.authStatus.textContent = "กำลังยืนยัน...";
+          await setPersistence(auth, browserLocalPersistence);
+
+          let fired = false;
+          const timer = setTimeout(() => {
+            if (!fired) {
+              ui.authStatus.textContent = "ยังไม่ได้เข้าสู่ระบบ";
+              window.location.href = "index.html";
+            }
+          }, 8000);
+
+          onAuthStateChanged(auth, async (user) => {
+            fired = true;
+            clearTimeout(timer);
+            if (user) {
+              userId = user.uid;
+              ui.userIdDisplay.textContent = ui.settingsUserId.textContent = userId;
+              ui.authStatus.textContent = "เชื่อมต่อสำเร็จ";
+
+              // email badge
+              const email = user.email || "(ผู้ใช้ไม่ระบุอีเมล)";
+              if (ui.authEmailText) ui.authEmailText.textContent = email;
+
+              await this.loadAllData();
+              this.showPage('page-sales-channel-select');
+            } else {
+              ui.authStatus.textContent = "ยังไม่ได้เข้าสู่ระบบ กำลังกลับไปหน้าเข้าสู่ระบบ...";
+              window.location.href = "index.html";
+            }
+          });
+        } catch (e) {
+          console.error("initAuth error:", e);
+          ui.authStatus.textContent = "เกิดข้อผิดพลาดเริ่มต้นระบบ";
+        }
+      },
+
+      async logout() {
+        try {
+          await signOut(auth);
+          userId = null;
+          if (ui.authEmailText) ui.authEmailText.textContent = "";
+          window.location.href = "index.html";
+        } catch (e) {
+          console.error("Logout error:", e);
+          this.showMessage('ผิดพลาด', `ออกจากระบบไม่ได้: ${e.message}`, 'error');
+        }
+      },
+
+      async loadAllData() {
+        if (!userId) return;
+        unsubSettings(); unsubInventory(); unsubProducts();
+
+        // Settings realtime
+        unsubSettings = onSnapshot(
+          doc(db, paths.settings()),
+          async (snap) => {
+            if (snap.exists()) {
+              state.settings = snap.data();
+            } else {
+              // ตั้งค่าเริ่มต้น (รวมชนิดสต็อกเริ่ม)
+              state.settings = {
+                salesChannels: ['หน้าร้าน','Grab','ShopeeFood','Line man'],
+                otherMaterials: [{ name: 'กล่อง', cost: 2 }, { name: 'ฟอยล์', cost: 1 }],
+                stockItems: DEFAULT_STOCK_ITEMS
+              };
+              await setDoc(doc(db, paths.settings()), state.settings);
+            }
+
+            // ถ้า stockItems ไม่มี ให้เติม default เพื่อเข้ากันย้อนหลัง
+            if (!Array.isArray(state.settings.stockItems) || state.settings.stockItems.length === 0) {
+              state.settings.stockItems = DEFAULT_STOCK_ITEMS;
+              await setDoc(doc(db, paths.settings()), state.settings, { merge: true });
+            }
+
+            this.renderSalesChannelSelect();
+            this.renderSettings();
+
+            // inventory realtime (หลังรู้ stockItems)
+            unsubInventory = onSnapshot(
+              doc(db, paths.inventory()),
+              async (snapInv) => {
+                if (snapInv.exists()) {
+                  state.inventory = snapInv.data() || {};
+                } else {
+                  // สร้างเอกสาร inventory ด้วยคีย์สต็อกทั้งหมดเป็น 0
+                  const initInv = {};
+                  state.settings.stockItems.forEach(si => initInv[si.key] = 0);
+                  await setDoc(doc(db, paths.inventory()), initInv);
+                  state.inventory = initInv;
+                }
+                this.renderInventory(); // ใช้ stockItems จาก settings
+              },
+              (e) => console.error("Inventory load error:", e)
+            );
+          },
+          (e) => console.error("Settings load error:", e)
+        );
+
+        // Products realtime
+        unsubProducts = onSnapshot(
+          collection(db, paths.products()),
+          (snap) => {
+            state.products = [];
+            snap.forEach(d => state.products.push({ id: d.id, ...d.data() }));
+            this.renderProductList();
+            if (state.currentChannel) this.renderPOSProductList();
+          },
+          (e) => console.error("Products load error:", e)
+        );
+      },
+
+      bindEvents() {
+        // เติมสต็อก (dynamic form)
+        ui.addStockSubmit.addEventListener('click', (e) => { e.preventDefault(); this.addStockDynamic(); });
+
+        document.getElementById('settings-channels-form').addEventListener('submit', (e) => { e.preventDefault(); this.saveSettings(); });
+        ui.productForm.addEventListener('submit', (e) => { e.preventDefault(); this.saveProduct(); });
+        ui.reportDeductionsForm.addEventListener('submit', (e) => { e.preventDefault(); this.saveDeductions(); });
+      },
+
+      showPage(id) {
+        let actual = id, highlight = id;
+        if (id === 'page-pos' && !state.currentChannel) actual = 'page-sales-channel-select';
+        if (id === 'page-sales-channel-select') highlight = 'page-pos';
+        if (id === 'page-reports') this.showReportTab('daily');
+
+        ui.pages.forEach(p => { p.classList.remove('active'); if (p.id === actual) p.classList.add('active'); });
+        state.activePage = actual;
+        this.updateNavHighlight(highlight);
+        ui.mobileMenu.classList.add('hidden');
+      },
+
+      updateNavHighlight(id) {
+        const act = ['bg-red-600','text-white','hover:bg-red-700'];
+        const inact = ['bg-white','text-gray-700','hover:bg-gray-50'];
+        ui.navButtonsDesktop.forEach(b => {
+          b.classList.remove(...act, ...inact);
+          b.classList.add(...(b.dataset.page === id ? act : inact));
+        });
+        ui.navButtonsMobile.forEach(b => {
+          b.classList.remove(...act, ...inact);
+          b.classList.add(...(b.dataset.page === id ? act : inact));
+        });
+      },
+
+      toggleMobileMenu() { ui.mobileMenu.classList.toggle('hidden'); },
+      updateTime() { const el = ui.currentDatetime; if (el) el.textContent = new Date().toLocaleString('th-TH'); },
+
+      // ---------- Sales Channel Select ----------
+      renderSalesChannelSelect() {
+        ui.salesChannelButtons.innerHTML = '';
+        const chans = state.settings.salesChannels || [];
+        if (chans.length === 0) {
+          ui.salesChannelButtons.innerHTML = '<p class="text-gray-500 col-span-full text-center">ยังไม่มีช่องทางการขาย</p>';
+          return;
+        }
+        const colors = {
+          'หน้าร้าน': 'bg-blue-500 hover:bg-blue-600',
+          'Grab': 'bg-green-700 hover:bg-green-800',
+          'ShopeeFood': 'bg-orange-500 hover:bg-orange-600',
+          'Line man': 'bg-green-400 hover:bg-green-500'
+        };
+        const defColor = 'bg-red-600 hover:bg-red-700';
+        chans.forEach(c => {
+          const cl = colors[c] || defColor;
+          ui.salesChannelButtons.innerHTML += `
+            <button onclick="App.selectSalesChannel('${c.replace(/'/g,"\\'")}')" class="w-full text-lg font-semibold py-10 px-4 ${cl} text-white rounded-lg shadow-lg transition transform hover:-translate-y-1">
+              ${c}
+            </button>`;
+        });
+      },
+
+      selectSalesChannel(c) {
+        state.currentChannel = c;
+        ui.currentSalesChannel.textContent = c;
+        this.renderPOSProductList();
+        this.clearCart();
+        this.updatePOSTodayTotal(c);
+        this.showPage('page-pos');
+      },
+
+      renderPOSProductList() {
+        ui.posProductList.innerHTML = '';
+        if (!state.currentChannel) return;
+        const prods = state.products.filter(p => p.salesChannelPrices?.[state.currentChannel] > 0);
+        if (prods.length === 0) {
+          ui.posProductList.innerHTML = `<p class="text-gray-500 col-span-full">ไม่มีสินค้าสำหรับช่องทางนี้</p>`;
+          return;
+        }
+        prods.forEach(p => {
+          const price = p.salesChannelPrices[state.currentChannel];
+          ui.posProductList.innerHTML += `
+            <button onclick="App.addToCart('${p.id}')" class="rounded-lg shadow-md overflow-hidden bg-white hover:shadow-xl transition transform hover:scale-105">
+              <img src="${p.imageUrl || 'https://placehold.co/300x200/e2e8f0/cbd5e0?text=รูป'}" alt="${p.name}" class="w-full h-24 md:h-32 object-cover">
+              <div class="p-3 text-center">
+                <h4 class="font-semibold truncate">${p.name}</h4>
+                <p class="text-red-600 font-bold">${parseFloat(price).toFixed(2)} ฿</p>
+              </div>
+            </button>`;
+        });
+      },
+
+      addToCart(id) {
+        const p = state.products.find(pr => pr.id === id);
+        if (!p) return;
+        const price = p.salesChannelPrices?.[state.currentChannel];
+        if (price === undefined || price <= 0) {
+          this.showMessage('ผิดพลาด', `สินค้านี้ไม่มีราคาสำหรับช่องทาง ${state.currentChannel}`, 'error');
+          return;
+        }
+        const item = state.cart.find(i => i.id === id);
+        if (item) item.qty++;
+        else state.cart.push({
+          id: p.id, name: p.name, price: parseFloat(price), qty: 1,
+          stockDeduction: p.stockDeduction || {} // {key: number}
+        });
+        this.renderCart();
+      },
+
+      increaseCartQty(i) { if (state.cart[i]) { state.cart[i].qty++; this.renderCart(); } },
+      decreaseCartQty(i) { if (state.cart[i]) { state.cart[i].qty--; if (state.cart[i].qty <= 0) state.cart.splice(i, 1); this.renderCart(); } },
+      clearCart() { state.cart = []; this.renderCart(); },
+
+      renderCart() {
+        ui.cartItems.innerHTML = '';
+        let total = 0;
+        if (state.cart.length === 0) {
+          ui.cartEmptyMsg.style.display = 'block';
+          ui.cartTotal.textContent = '0.00 บาท';
+          ui.confirmSaleBtn.disabled = true;
+          return;
+        }
+        ui.cartEmptyMsg.style.display = 'none';
+        state.cart.forEach((item, i) => {
+          ui.cartItems.innerHTML += `
+            <div class="flex justify-between items-center">
+              <div>
+                <p class="font-medium">${item.name}</p>
+                <p class="text-sm text-gray-600">${item.qty} x ${item.price.toFixed(2)} ฿</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="font-semibold text-gray-800 w-20 text-right">${(item.qty * item.price).toFixed(2)} ฿</span>
+                <button onclick="App.decreaseCartQty(${i})" class="text-red-500 hover:text-red-700 p-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/></svg>
+                </button>
+                <span class="font-medium w-5 text-center">${item.qty}</span>
+                <button onclick="App.increaseCartQty(${i})" class="text-green-600 hover:text-green-800 p-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                </button>
+              </div>
+            </div>`;
+          total += item.qty * item.price;
+        });
+        ui.cartTotal.textContent = `${total.toFixed(2)} บาท`;
+        ui.confirmSaleBtn.disabled = false;
+      },
+
+      // ===== สร้าง Order ID แบบกันชนกันด้วย Transaction =====
+      async createOrderId(channel) {
+        const dateStr = fmtDate(new Date()); // YYYYMMDD
+        const code = channelCode(channel);
+        const ref = doc(db, paths.orderCounterDoc(code, dateStr));
+        const seq = await runTransaction(db, async (tx) => {
+          const snap = await tx.get(ref);
+          let current = 0;
+          if (snap.exists()) {
+            current = (snap.data().seq || 0) + 1;
+          } else {
+            current = 1;
+          }
+          tx.set(ref, { seq: current, channel: code, date: dateStr, updatedAt: serverTimestamp() }, { merge: true });
+          return current;
+        });
+        const orderId = `${code}-${dateStr}-${pad4(seq)}`;
+        return { orderId, seq, dateStr, code };
+      },
+
+      async confirmSale() {
+        if (state.cart.length === 0) return;
+
+        // รวมยอดตัดสต็อกแบบไดนามิก
+        const totalDed = {}; // {key: number}
+        state.cart.forEach(i => {
+          const ded = i.stockDeduction || {};
+          Object.keys(ded).forEach(k => {
+            const use = Number(ded[k] || 0) * i.qty;
+            if (use > 0) totalDed[k] = (totalDed[k] || 0) + use;
+          });
+        });
+
+        // ตรวจสต็อกพอไหม
+        for (const si of state.settings.stockItems) {
+          const k = si.key;
+          const need = totalDed[k] || 0;
+          const have = Number(state.inventory[k] || 0);
+          if (need > have) {
+            return this.showMessage('สต็อกไม่พอ', `${si.label} (${si.unit}) ไม่พอ`, 'error');
+          }
+        }
+
+        ui.confirmSaleBtn.disabled = true;
+        ui.confirmSaleBtn.textContent = 'กำลังบันทึก...';
+
+        try {
+          // ==== สร้าง Order ID ก่อน ====
+          const { orderId, code } = await this.createOrderId(state.currentChannel);
+
+          const batch = writeBatch(db);
+          const saleRef = doc(db, paths.sales(), orderId);
+          const total = state.cart.reduce((s, i) => s + (i.qty * i.price), 0);
+
+          batch.set(saleRef, {
+            orderId,                 // เก็บซ้ำใน field ด้วย
+            createdAt: serverTimestamp(),
+            salesChannel: state.currentChannel,
+            salesChannelCode: code,
+            total: total,
+            items: state.cart.map(i => ({ pId: i.id, name: i.name, qty: i.qty, price: i.price })),
+            stockUsage: totalDed    // บันทึกการใช้สต็อกของบิลนี้
+          });
+
+          // หักสต็อกจาก inventory แบบไดนามิก
+          const invRef = doc(db, paths.inventory());
+          const updates = {};
+          Object.keys(totalDed).forEach(k => { updates[k] = increment(-totalDed[k]); });
+          batch.update(invRef, updates);
+
+          await batch.commit();
+          this.showMessage('สำเร็จ', `บันทึกการขายแล้ว\nOrder ID: ${orderId}`, 'success');
+          this.clearCart();
+          this.updatePOSTodayTotal(state.currentChannel);
+        } catch (e) {
+          console.error("Confirm sale error:", e);
+          this.showMessage('ผิดพลาด', `บันทึกไม่ได้: ${e.message}`, 'error');
+        } finally {
+          ui.confirmSaleBtn.disabled = false;
+          ui.confirmSaleBtn.textContent = 'ยืนยันการขาย';
+        }
+      },
+
+      async addStockDynamic() {
+        // อ่านค่าจากฟอร์มไดนามิกทุกชนิดสต็อก
+        const inputs = ui.addStockForm.querySelectorAll('input[data-stock-key]');
+        const incMap = {};
+        inputs.forEach(inp => {
+          const k = inp.dataset.stockKey;
+          const val = parseInt(inp.value) || 0;
+          if (val > 0) incMap[k] = (incMap[k] || 0) + val;
+        });
+        if (Object.keys(incMap).length === 0) return;
+
+        try {
+          const ref = doc(db, paths.inventory());
+          const updates = {};
+          Object.entries(incMap).forEach(([k, v]) => updates[k] = increment(v));
+          await updateDoc(ref, updates);
+          this.showMessage('สำเร็จ','เติมสต็อกแล้ว','success');
+          // reset
+          inputs.forEach(i => i.value = '');
+        } catch (e) {
+          console.error("Add stock error:", e);
+          // ถ้ายังไม่มี inventory ให้ setDoc
+          if (e.code === 'not-found') {
+            const init = { ...state.inventory };
+            Object.entries(incMap).forEach(([k,v]) => init[k] = (init[k] || 0) + v);
+            await setDoc(doc(db, paths.inventory()), init);
+            this.showMessage('สำเร็จ','สร้าง/เติมสต็อกแล้ว','success');
+          } else {
+            this.showMessage('ผิดพลาด', `เติมไม่ได้: ${e.message}`, 'error');
+          }
+        }
+      },
+
+      async updatePOSTodayTotal(c) {
+        if (!c) { ui.posChannelTodayTotal.textContent = '0.00 บาท'; return; }
+        ui.posChannelTodayTotal.textContent = 'กำลังคำนวณ...';
+        try {
+          const today = new Date();
+          const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const end   = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23,59,59,999);
+          const qy = query(collection(db, paths.sales()), where("createdAt", ">=", start), where("createdAt", "<=", end));
+          const snap = await getDocs(qy);
+          let total = 0;
+          snap.forEach(d => { if (d.data().salesChannel === c) total += d.data().total; });
+          ui.posChannelTodayTotal.textContent = `${total.toFixed(2)} บาท`;
+        } catch (e) {
+          console.error("Today total error:", e);
+          ui.posChannelTodayTotal.textContent = 'Error!';
+        }
+      },
+
+      // ---------- Inventory & Settings (Dynamic) ----------
+      renderInventory() {
+        // บัตรคงเหลือ
+        ui.inventoryBalance.innerHTML = '';
+        const items = state.settings.stockItems || [];
+        if (items.length === 0) {
+          ui.inventoryBalance.innerHTML = '<p class="text-gray-500">ยังไม่มีชนิดสต็อก</p>';
+        } else {
+          items.forEach((si, idx) => {
+            const palettes = ['bg-blue-50 text-blue-600','bg-green-50 text-green-600','bg-red-50 text-red-600','bg-purple-50 text-purple-600','bg-orange-50 text-orange-600','bg-teal-50 text-teal-600'];
+            const style = palettes[idx % palettes.length];
+            const val = Number(state.inventory[si.key] || 0);
+            ui.inventoryBalance.innerHTML += `
+              <div class="flex justify-between items-center p-4 rounded-lg ${style.split(' ')[0]}">
+                <span class="text-lg font-medium">${si.label} (${si.unit})</span>
+                <span class="text-2xl font-bold ${style.split(' ')[1]}">${val}</span>
+              </div>`;
+          });
+        }
+
+        // ฟอร์มเติมสต็อก
+        ui.addStockForm.innerHTML = '';
+        items.forEach(si => {
+          ui.addStockForm.innerHTML += `
+            <div>
+              <label class="block text-sm font-medium text-gray-700">จำนวน ${si.label} (${si.unit})</label>
+              <input type="number" min="0" data-stock-key="${si.key}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="0">
+            </div>`;
+        });
+      },
+
+      renderSettings() {
+        // ช่องทาง
+        ui.settingsChannelsList.innerHTML = '';
+        (state.settings.salesChannels || []).forEach(c => this.addSalesChannelInput(c));
+
+        // วัตถุดิบอื่น
+        ui.settingsMaterialsList.innerHTML = '';
+        (state.settings.otherMaterials || []).forEach(m => this.addOtherMaterialInput(m));
+
+        // ชนิดสต็อก (dynamic)
+        ui.stockItemsList.innerHTML = '';
+        (state.settings.stockItems || DEFAULT_STOCK_ITEMS).forEach(si => this.addStockItemInput(si));
+      },
+
+      addSalesChannelInput(v = '') {
+        const d = document.createElement('div');
+        d.className = 'flex space-x-2';
+        d.innerHTML = `
+          <input type="text" data-type="channel" value="${v}" class="flex-grow px-3 py-2 border rounded-md" placeholder="เช่น Grab" required>
+          <button type="button" onclick="this.parentElement.remove()" class="text-red-500 p-2">ลบ</button>`;
+        ui.settingsChannelsList.appendChild(d);
+      },
+
+      addOtherMaterialInput(m = {name:'', cost:''}) {
+        const d = document.createElement('div');
+        d.className = 'flex space-x-2';
+        d.innerHTML = `
+          <input type="text" data-type="material-name" value="${m.name || ''}" class="flex-grow px-3 py-2 border rounded-md" placeholder="เช่น กล่อง" required>
+          <input type="number" data-type="material-cost" value="${m.cost ?? ''}" min="0" step="0.01" class="w-24 px-3 py-2 border rounded-md" placeholder="ต้นทุน" required>
+          <button type="button" onclick="this.parentElement.remove()" class="text-red-500 p-2">ลบ</button>`;
+        ui.settingsMaterialsList.appendChild(d);
+      },
+
+      // อินพุตชนิดสต็อก: key, label, unit
+      addStockItemInput(si = { key:'', label:'', unit:'' }) {
+        const d = document.createElement('div');
+        d.className = 'grid grid-cols-3 gap-2 items-end';
+        d.innerHTML = `
+          <div>
+            <label class="block text-xs text-gray-500">รหัส (อังกฤษ)</label>
+            <input type="text" data-type="stock-key" value="${si.key || ''}" class="mt-1 block w-full px-3 py-2 border rounded-md" placeholder="เช่น wing" required>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500">ชื่อแสดงผล</label>
+            <input type="text" data-type="stock-label" value="${si.label || ''}" class="mt-1 block w-full px-3 py-2 border rounded-md" placeholder="เช่น ปีกไก่" required>
+          </div>
+          <div class="flex space-x-2">
+            <div class="flex-1">
+              <label class="block text-xs text-gray-500">หน่วย</label>
+              <input type="text" data-type="stock-unit" value="${si.unit || ''}" class="mt-1 block w-full px-3 py-2 border rounded-md" placeholder="เช่น ชิ้น" required>
+            </div>
+            <button type="button" onclick="this.closest('div.grid').remove()" class="text-red-500 p-2">ลบ</button>
+          </div>`;
+        ui.stockItemsList.appendChild(d);
+      },
+
+      async saveSettings() {
+        const chans = [];
+        const mats = [];
+        const stocks = [];
+
+        // channels
+        ui.settingsChannelsList.querySelectorAll('input[data-type="channel"]').forEach(i => {
+          if (i.value.trim()) chans.push(i.value.trim());
+        });
+
+        // other materials
+        ui.settingsMaterialsList.querySelectorAll(':scope > div').forEach(d => {
+          const n = d.querySelector('input[data-type="material-name"]').value.trim();
+          const c = parseFloat(d.querySelector('input[data-type="material-cost"]').value);
+          if (n && !isNaN(c)) mats.push({ name: n, cost: c });
+        });
+
+        // stock items
+        ui.stockItemsList.querySelectorAll(':scope > div').forEach(d => {
+          const key   = d.querySelector('input[data-type="stock-key"]').value.trim();
+          const label = d.querySelector('input[data-type="stock-label"]').value.trim();
+          const unit  = d.querySelector('input[data-type="stock-unit"]').value.trim();
+          if (key && label && unit) stocks.push({ key, label, unit });
+        });
+
+        if (stocks.length === 0) {
+          // กันพัง: บังคับมีอย่างน้อย 1
+          DEFAULT_STOCK_ITEMS.forEach(s => stocks.push(s));
+        }
+
+        try {
+          await setDoc(doc(db, paths.settings()), {
+            salesChannels: chans,
+            otherMaterials: mats,
+            stockItems: stocks
+          }, { merge: true });
+
+          // sync inventory ให้มีทุก key (ไม่ลบของเดิม เผื่อเคยใช้)
+          const invRef = doc(db, paths.inventory());
+          const invSnap = await getDoc(invRef);
+          let inv = {};
+          if (invSnap.exists()) inv = invSnap.data() || {};
+          stocks.forEach(s => { if (typeof inv[s.key] !== 'number') inv[s.key] = 0; });
+          await setDoc(invRef, inv, { merge: true });
+
+          this.showMessage('สำเร็จ','บันทึกตั้งค่าแล้ว','success');
+        } catch (e) {
+          console.error("Save settings error:", e);
+          this.showMessage('ผิดพลาด', `บันทึกไม่ได้: ${e.message}`, 'error');
+        }
+      },
+
+      // ---------- Product ----------
+      showProductForm(id) {
+        ui.productForm.reset();
+        ui.productImagePreview.src = 'https://placehold.co/100x100/e2e8f0/cbd5e0?text=รูป';
+        ui.productImageUrlInput.value = '';
+        ui.productPricesInputs.innerHTML = '';
+        ui.productDeductDynamic.innerHTML = '';
+
+        // prices by channel
+        (state.settings.salesChannels || []).forEach(c => {
+          const cId = c.replace(/\s+/g, '-');
+          ui.productPricesInputs.innerHTML += `
+            <div class="flex items-center space-x-2">
+              <label for="price-${cId}" class="w-28 text-sm">${c}</label>
+              <input type="number" id="price-${cId}" data-channel="${c}" min="0" step="0.01" class="flex-grow px-3 py-2 border rounded-md" placeholder="ราคา">
+            </div>`;
+        });
+
+        // dynamic stock deduction inputs
+        (state.settings.stockItems || DEFAULT_STOCK_ITEMS).forEach(si => {
+          ui.productDeductDynamic.innerHTML += `
+            <div>
+              <label class="block text-sm font-medium text-gray-700">${si.label} (${si.unit})</label>
+              <input type="number" min="0" step="1" class="mt-1 block w-full px-3 py-2 border rounded-md"
+                     data-stock-deduct-key="${si.key}" placeholder="0" value="0">
+            </div>`;
+        });
+
+        if (id) {
+          const p = state.products.find(pr => pr.id === id);
+          if (p) {
+            ui.productFormTitle.textContent = 'แก้ไขสินค้า';
+            ui.productId.value = p.id;
+            ui.productName.value = p.name || '';
+            ui.productCost.value = p.cost ?? '';
+            if (p.imageUrl) { ui.productImagePreview.src = p.imageUrl; ui.productImageUrlInput.value = p.imageUrl; }
+
+            // set prices
+            Object.entries(p.salesChannelPrices || {}).forEach(([c, pr]) => {
+              const cId = c.replace(/\s+/g, '-');
+              const inp = document.getElementById(`price-${cId}`);
+              if (inp) inp.value = pr;
+            });
+
+            // set stock deduction
+            const ded = p.stockDeduction || {};
+            ui.productDeductDynamic.querySelectorAll('input[data-stock-deduct-key]').forEach(inp => {
+              const k = inp.dataset.stockDeductKey;
+              inp.value = ded[k] ?? 0;
+            });
+
+          }
+        } else {
+          ui.productFormTitle.textContent = 'เพิ่มสินค้าใหม่';
+          ui.productId.value = '';
+        }
+
+        ui.productModal.classList.remove('hidden');
+      },
+
+      closeProductForm() { ui.productModal.classList.add('hidden'); },
+
+      async saveProduct() {
+        const id = ui.productId.value;
+
+        // prices
+        const prices = {};
+        ui.productPricesInputs.querySelectorAll('input[data-channel]').forEach(i => {
+          const v = parseFloat(i.value);
+          if (!isNaN(v)) prices[i.dataset.channel] = Math.max(0, v);
+        });
+
+        // stock deduction dynamic
+        const stockDeduction = {};
+        ui.productDeductDynamic.querySelectorAll('input[data-stock-deduct-key]').forEach(i => {
+          const k = i.dataset.stockDeductKey;
+          const v = parseInt(i.value) || 0;
+          if (v > 0) stockDeduction[k] = v;
+        });
+
+        const data = {
+          name: ui.productName.value,
+          cost: parseFloat(ui.productCost.value) || 0,
+          stockDeduction,
+          salesChannelPrices: prices,
+          imageUrl: (ui.productImageUrlInput.value || '').trim() || null
+        };
+
+        try {
+          if (id) await setDoc(doc(db, paths.productDoc(id)), data);
+          else await addDoc(collection(db, paths.products()), data);
+
+          this.showMessage('สำเร็จ', id ? 'อัปเดตแล้ว' : 'เพิ่มแล้ว', 'success');
+          this.closeProductForm();
+        } catch (e) {
+          console.error("Save product error:", e);
+          this.showMessage('ผิดพลาด', `บันทึกไม่ได้: ${e.message}`, 'error');
+        }
+      },
+
+      async deleteProduct(id) {
+        if (!confirm('แน่ใจนะ?')) return;
+        try {
+          await deleteDoc(doc(db, paths.productDoc(id)));
+          this.showMessage('สำเร็จ','ลบแล้ว','success');
+        } catch (e) {
+          console.error("Delete product error:", e);
+          this.showMessage('ผิดพลาด', `ลบไม่ได้: ${e.message}`, 'error');
+        }
+      },
+
+      renderProductList() {
+        ui.productList.innerHTML = '';
+        if (state.products.length === 0) {
+          ui.productList.innerHTML = `<p class="text-gray-500 text-center py-4">ยังไม่มีสินค้า</p>`;
+          return;
+        }
+        state.products.forEach(p => {
+          const prices = Object.entries(p.salesChannelPrices || {}).map(([c, pr]) =>
+            `<span class="text-xs bg-gray-200 px-2 py-0.5 rounded-full">${c}: ${parseFloat(pr).toFixed(2)}฿</span>`
+          ).join(' ');
+
+          const dedStr = Object.entries(p.stockDeduction || {}).map(([k, v]) => {
+            const si = (state.settings.stockItems || []).find(x => x.key === k);
+            if (!si) return `${k} ${v}`;
+            return `${si.label} ${v}`;
+          }).join(' , ');
+
+          ui.productList.innerHTML += `
+            <div class="flex items-center space-x-4 p-4 border-b last:border-b-0">
+              <img src="${p.imageUrl || 'https://placehold.co/100x100/e2e8f0/cbd5e0?text=รูป'}" alt="${p.name}" class="w-16 h-16 rounded-md object-cover flex-shrink-0">
+              <div class="flex-grow">
+                <h4 class="text-lg font-semibold">${p.name}</h4>
+                <p class="text-sm text-gray-600">ต้นทุน: ${parseFloat(p.cost || 0).toFixed(2)} ฿ | ตัด: ${dedStr || '-'}</p>
+                <div class="flex flex-wrap gap-1 mt-2">${prices || '<span class="text-xs text-gray-500">ไม่มีราคา</span>'}</div>
+              </div>
+              <div class="flex-shrink-0 space-x-2">
+                <button onclick="App.showProductForm('${p.id}')" class="text-blue-600">แก้ไข</button>
+                <button onclick="App.deleteProduct('${p.id}')" class="text-red-600">ลบ</button>
+              </div>
+            </div>`;
+        });
+      },
+
+      // ---------- Reports ----------
+      showReportTab(name) {
+        [ui.reportTabDaily, ui.reportTabSummary].forEach(t => t.classList.remove('active'));
+        [ui.reportTabDailyBtn, ui.reportTabSummaryBtn].forEach(b => b.classList.remove('active'));
+        if (name === 'summary') {
+          ui.reportTabSummary.classList.add('active');
+          ui.reportTabSummaryBtn.classList.add('active');
+          if (!summaryChartGrossInstance && !summaryChartNetInstance) this.loadSummaryReport();
+        } else {
+          ui.reportTabDaily.classList.add('active');
+          ui.reportTabDailyBtn.classList.add('active');
+        }
+      },
+
+async loadReport() {
+  const dStr = ui.reportDate.value;
+  if (!dStr) {
+    this.showMessage('ผิดพลาด','กรุณาเลือกวันที่','error');
+    return;
+  }
+
+  // ระหว่างโหลด
+  ui.reportContent.innerHTML = `<p class="text-gray-500">กำลังโหลดรายงาน...</p>`;
+  ui.reportDeductionsForm.style.display = 'none';
+  ui.reportDeductionsChannels.innerHTML = '';
+
+  try {
+    // ดึงยอดขาย (กรองแบบ Local day) + ดึงค่าใช้จ่ายของวันนั้น
+    const [sales, deds] = await Promise.all([
+      this.fetchSalesForDate(dStr),
+      this.fetchDeductionsForDate(dStr)
+    ]);
+
+    // แสดงสรุปรายวัน (อ่านจาก state.reportCache)
+    this.renderReportSummary();
+
+    // รวมช่องทางที่จะโชว์ในฟอร์มค่าใช้จ่าย
+    const chanFromSales = new Set(sales.map(s => s.salesChannel).filter(Boolean));
+    const chanFromDeds  = new Set(Object.keys(deds || {}));
+    const chanFromConf  = new Set((state.settings.salesChannels || []));
+    const chans = Array.from(new Set([
+      ...chanFromSales,
+      ...chanFromDeds,
+      ...chanFromConf
+    ])).filter(Boolean);
+
+    // วาดฟอร์มกรอกค่าใช้จ่าย
+    this.renderDeductionsForm(chans, deds);
+  } catch (e) {
+    console.error('loadReport error:', e);
+    this.showMessage('ผิดพลาด', `โหลดรายงานไม่ได้: ${e.message}`, 'error');
+    ui.reportContent.innerHTML = `<p class="text-red-500">เกิดข้อผิดพลาดในการโหลดรายงาน</p>`;
+    ui.reportDeductionsForm.style.display = 'none';
+  }
+},
+
+
+
+  async fetchSalesForDate(dStr) {
+  // ใช้ timezone LOCAL (เวลาไทย) เสมอ
+  const start = parseLocalDate(dStr);
+  const end   = endOfLocalDate(dStr);
+
+  // ดึง createdAt แบบ toDate() แล้วค่อยกรองซ้ำแบบ Local time
+  const snap = await getDocs(collection(db, paths.sales()));
+  let sales = [];
+  snap.forEach(d => {
+    const data = d.data();
+    const ts = data.createdAt?.toDate?.();
+    if (!ts) return;
+
+    // เทียบวันแบบ local (ไม่ใช้ timestamp ที่เป็น UTC โดยตรง)
+    const saleDateStr = formatLocalYMD(ts);
+    if (saleDateStr === dStr) sales.push({ id: d.id, ...data });
+  });
+
+  state.reportCache.sales = sales;
+  return sales;
+}
+,
+
+      async fetchDeductionsForDate(dStr) {
+        try {
+          const snap = await getDoc(doc(db, paths.deductions(dStr)));
+          state.reportCache.deductions = snap.exists() ? snap.data().channels || {} : {};
+        } catch (e) {
+          console.error("Fetch deductions error:", e);
+          state.reportCache.deductions = {};
+        }
+        return state.reportCache.deductions;
+      },
+
+      async fetchSalesForDateRange(startS, endS) {
+        const start = parseLocalDate(startS);
+        const end   = endOfLocalDate(endS);
+        const qy = query(collection(db, paths.sales()), where("createdAt", ">=", start), where("createdAt", "<=", end));
+        const snap = await getDocs(qy);
+        let sales = [];
+        snap.forEach(d => sales.push({ id: d.id, ...d.data() }));
+        return sales;
+      },
+
+      async fetchDeductionsForDateRange(startS, endS) {
+        const qy = query(collection(db, paths.deductionsCollection()), where(documentId(), ">=", startS), where(documentId(), "<=", endS));
+        const snap = await getDocs(qy);
+        const map = {};
+        snap.forEach(d => { map[d.id] = d.data().channels || {}; });
+        return map;
+      },
+
+      async loadSummaryReport() {
+        const from = ui.reportDateFrom.value, to = ui.reportDateTo.value;
+        if (!from || !to || new Date(from) > new Date(to)) return this.showMessage('ผิดพลาด','เลือกช่วงวันที่','error');
+
+        ui.summaryTotalCards.innerHTML = `<p>กำลังโหลด...</p>`;
+        ui.summaryBestSellers.innerHTML = `<p>...</p>`;
+        ui.summaryByChannel.innerHTML = `<p>...</p>`;
+        if (summaryChartGrossInstance) summaryChartGrossInstance.destroy();
+        if (summaryChartNetInstance) summaryChartNetInstance.destroy();
+
+        try {
+          const [sales, dedsMap] = await Promise.all([this.fetchSalesForDateRange(from, to), this.fetchDeductionsForDateRange(from, to)]);
+          this.processAndRenderSummary(sales, dedsMap, from, to);
+        } catch (e) {
+          console.error("Load summary error:", e);
+          this.showMessage('ผิดพลาด', `โหลดไม่ได้: ${e.message}`, 'error');
+          ui.summaryTotalCards.innerHTML = `<p class="text-red-500">Error</p>`;
+          ui.summaryBestSellers.innerHTML = `<p class="text-red-500">Error</p>`;
+          ui.summaryByChannel.innerHTML = `<p class="text-red-500">Error</p>`;
+        }
+      },
+
+      processAndRenderSummary(sales, dedsMap, from, to) {
+        const daily = new Map(), allChans = new Set(state.settings.salesChannels);
+
+        // เดินวันที่แบบ LOCAL
+        let cur = parseLocalDate(from);
+        const endD = parseLocalDate(to);
+        while (cur <= endD) {
+          const dStr = formatLocalYMD(cur);
+          daily.set(dStr, { grossByChannel: {}, deds: 0, net: 0 });
+          allChans.forEach(c => daily.get(dStr).grossByChannel[c] = 0);
+          cur.setDate(cur.getDate() + 1);
+        }
+
+        // รวมยอดแต่ละบิล -> แปลงเป็นวัน LOCAL
+        sales.forEach(s => {
+          const ts = s.createdAt?.toDate?.();
+          if (!ts) return;
+          const dStr = formatLocalYMD(ts);
+          const c = s.salesChannel;
+          if (daily.has(dStr) && c) {
+            allChans.add(c);
+            if (!daily.get(dStr).grossByChannel[c]) daily.get(dStr).grossByChannel[c] = 0;
+            daily.get(dStr).grossByChannel[c] += s.total || 0;
+          }
+        });
+
+        let totalG = 0, totalD = 0, totalN = 0;
+        daily.forEach((d, dStr) => {
+          let dailyG = Object.values(d.grossByChannel).reduce((s, v) => s + v, 0);
+          let dailyD = 0;
+          if (dedsMap[dStr]) {
+            dailyD = Object.values(dedsMap[dStr]).reduce(
+              (s, cD) => s + Object.values(cD).reduce((s2, v) => s2 + (v || 0), 0), 0
+            );
+          }
+          d.deds = dailyD;
+          d.net = dailyG - dailyD;
+          totalG += dailyG; totalD += dailyD; totalN += d.net;
+        });
+
+        ui.summaryTotalCards.innerHTML = `
+          <div class="bg-blue-50 p-4 rounded-lg border"><p>ยอดรวม (Gross)</p><p class="text-2xl font-bold">${totalG.toFixed(2)} ฿</p></div>
+          <div class="bg-red-50 p-4 rounded-lg border"><p>หักรวม</p><p class="text-2xl font-bold">-${totalD.toFixed(2)} ฿</p></div>
+          <div class="bg-green-50 p-4 rounded-lg border"><p>สุทธิรวม (Net)</p><p class="text-2xl font-bold">${totalN.toFixed(2)} ฿</p></div>`;
+
+        const sortedChans = Array.from(allChans).sort();
+        const labels = Array.from(daily.keys());
+
+        const grossDS = sortedChans.map((c) => ({
+          label: c,
+          data: labels.map(dStr => daily.get(dStr).grossByChannel[c] || 0),
+          backgroundColor: channelColors[c] || channelColors['default'],
+          borderWidth: 1
+        }));
+
+        const netData = labels.map(dStr => daily.get(dStr).net);
+
+        // ===== Gross by channel (stacked bar)
+        const ctxG = ui.summaryChartGrossCanvas.getContext('2d');
+        if (summaryChartGrossInstance) summaryChartGrossInstance.destroy();
+        summaryChartGrossInstance = new Chart(ctxG, {
+          type: 'bar',
+          data: { labels, datasets: grossDS },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom' },
+              tooltip: { callbacks: { label: App.chartTooltipLabel } }
+            },
+            scales: {
+              x: { type: 'category', grid: { display: false }, stacked: true, title: { display: true, text: 'วันที่' } },
+              y: { stacked: true, beginAtZero: true, title: { display: true, text: 'ยอดขาย (บาท)' } }
+            }
+          }
+        });
+
+        // ===== Net total (bar)
+        const ctxN = ui.summaryChartNetCanvas.getContext('2d');
+        if (summaryChartNetInstance) summaryChartNetInstance.destroy();
+        summaryChartNetInstance = new Chart(ctxN, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'ยอดสุทธิ', data: netData, backgroundColor: 'rgba(22,163,74,0.7)', borderWidth: 1 }] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: App.chartTooltipLabel } } },
+            scales: {
+              x: { type: 'category', grid: { display: false }, title: { display: true, text: 'วันที่' } },
+              y: { beginAtZero: true, title: { display: true, text: 'ยอดสุทธิ (บาท)' } }
+            }
+          }
+        });
+
+        // ===== Best sellers
+        const prodSum = new Map();
+        sales.forEach(s => {
+          if (!s.items) return;
+          s.items.forEach(i => {
+            const k = i.name || 'N/A';
+            if (!prodSum.has(k)) prodSum.set(k, { name: k, qty: 0, sales: 0 });
+            const p = prodSum.get(k);
+            p.qty += (i.qty || 0);
+            p.sales += (i.qty || 0) * (i.price || 0);
+          });
+        });
+        const prodList = Array.from(prodSum.values()).sort((a,b) => b.sales - a.sales);
+        let bestHtml = '<table class="w-full text-sm"><tbody><tr class="text-xs bg-gray-50"><th class="px-4 py-2">สินค้า</th><th class="px-4 py-2 text-right">จำนวน</th><th class="px-4 py-2 text-right">ยอดขาย</th></tr>';
+        if (prodList.length === 0) bestHtml += '<tr><td colspan="3" class="p-4 text-center">ไม่มีข้อมูล</td></tr>';
+        else prodList.forEach(p => bestHtml += `<tr class="border-b"><td class="px-4 py-2">${p.name}</td><td class="px-4 py-2 text-right">${p.qty}</td><td class="px-4 py-2 text-right font-semibold">${p.sales.toFixed(2)}</td></tr>`);
+        bestHtml += '</tbody></table>';
+        ui.summaryBestSellers.innerHTML = bestHtml;
+
+        // ===== By channel summary
+        const chanSum = new Map();
+        sales.forEach(s => {
+          const c = s.salesChannel || 'N/A';
+          if (!chanSum.has(c)) chanSum.set(c, { name: c, orders: 0, sales: 0 });
+          const sum = chanSum.get(c);
+          sum.orders++;
+          sum.sales += (s.total || 0);
+        });
+        const chanList = Array.from(chanSum.values()).sort((a, b) => b.sales - a.sales);
+        chanList.forEach(c => c.aov = c.orders > 0 ? c.sales / c.orders : 0);
+
+        let chanHtml = '<table class="w-full text-sm"><tbody><tr class="text-xs bg-gray-50"><th class="px-4 py-2">ช่องทาง</th><th class="px-4 py-2 text-right">Orders</th><th class="px-4 py-2 text-right">ยอดขาย</th><th class="px-4 py-2 text-right">ยอดเฉลี่ย</th></tr>';
+        if (chanList.length === 0) chanHtml += '<tr><td colspan="4" class="p-4 text-center">ไม่มีข้อมูล</td></tr>';
+        else chanList.forEach(c => chanHtml += `<tr class="border-b"><td class="px-4 py-2">${c.name}</td><td class="px-4 py-2 text-right">${c.orders}</td><td class="px-4 py-2 text-right font-semibold">${c.sales.toFixed(2)}</td><td class="px-4 py-2 text-right">${c.aov.toFixed(2)}</td></tr>`);
+        chanHtml += '</tbody></table>';
+        ui.summaryByChannel.innerHTML = chanHtml;
+      },
+
+      renderReportSummary() {
+        const { sales, deductions } = state.reportCache;
+        const dStr = ui.reportDate.value;
+        const summary = {};
+        let totalG = 0, totalD = 0;
+
+        sales.forEach(s => {
+          if (!s?.salesChannel || !s.items) return;
+          const c = s.salesChannel;
+          if (!summary[c]) summary[c] = { totalGross: 0, count: 0, items: {} };
+          const sTotal = parseFloat(s.total) || 0;
+          summary[c].totalGross += sTotal;
+          summary[c].count++;
+          totalG += sTotal;
+          s.items.forEach(i => {
+            if (!summary[c].items[i.name]) summary[c].items[i.name] = 0;
+            summary[c].items[i.name] += (i.qty || 0);
+          });
+        });
+
+        Object.keys(summary).forEach(c => {
+          const cDed = deductions[c] || {};
+          const tDed = Object.values(cDed).reduce((s, v) => s + (v || 0), 0);
+          summary[c].totalDeductions = tDed;
+          summary[c].totalNet = summary[c].totalGross - tDed;
+          totalD += tDed;
+        });
+
+        const totalN = totalG - totalD;
+
+        let html = `
+          <h3 class="text-2xl font-bold mb-4">สรุปยอด วันที่ ${dStr}</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-blue-50 p-4 rounded-lg border"><p>ยอดรวม (Gross)</p><p class="text-2xl font-bold">${totalG.toFixed(2)} ฿</p></div>
+            <div class="bg-red-50 p-4 rounded-lg border"><p>หักค่าใช้จ่าย</p><p class="text-2xl font-bold">-${totalD.toFixed(2)} ฿</p></div>
+            <div class="bg-green-50 p-4 rounded-lg border"><p>ยอดสุทธิ (Net)</p><p class="text-2xl font-bold">${totalN.toFixed(2)} ฿</p></div>
+          </div>`;
+
+        Object.entries(summary)
+          .sort((a,b) => b[1].totalGross - a[1].totalGross)
+          .forEach(([c, d]) => {
+            html += `
+              <div class="border rounded-lg p-4 mb-4">
+                <h4 class="text-lg font-semibold text-red-600">${c}</h4>
+                <p>ยอดรวม: ${d.totalGross.toFixed(2)} ฿</p>
+                ${d.totalDeductions > 0 ? `
+                  <p class="text-red-700">หัก: -${d.totalDeductions.toFixed(2)} ฿</p>
+                  <p class="font-bold text-green-700">สุทธิ: ${d.totalNet.toFixed(2)} ฿</p>` : ``}
+                <p class="text-sm">บิล: ${d.count}</p>
+                <details class="text-sm mt-2">
+                  <summary>รายการขาย</summary>
+                  <ul class="list-disc list-inside mt-2 pl-4">` +
+                    Object.entries(d.items)
+                      .sort((a,b) => b[1]-a[1])
+                      .map(([n,q]) => `<li>${n}: ${q}</li>`).join('') +
+                  `</ul>
+                </details>
+              </div>`;
+          });
+
+        ui.reportContent.innerHTML = html;
+      },
+
+      renderDeductionsForm(chans, deds) {
+        ui.reportDeductionsChannels.innerHTML = '';
+        if (chans.length === 0) { ui.reportDeductionsForm.style.display = 'none'; return; }
+        const labels = { gp: 'GP', discount: 'ส่วนลด', ad: 'โฆษณา', commission: 'คอมฯ', marketing: 'การตลาด' };
+        chans.forEach(c => {
+          const d = deds[c] || {};
+          let h = `<div class="border rounded-lg p-4"><h4 class="text-lg font-semibold text-red-600 mb-3">${c}</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-3">`;
+          Object.entries(labels).forEach(([k,l]) => {
+            const id = `ded-${c.replace(/\s+/g,'-')}-${k}`;
+            h += `<div><label for="${id}" class="block text-sm">${l} (฿)</label><input type="number" min="0" step="0.01" id="${id}" data-channel="${c}" data-key="${k}" value="${d[k] || ''}" class="mt-1 block w-full px-3 py-2 border rounded-md" placeholder="0.00"></div>`;
+          });
+          h += `</div></div>`;
+          ui.reportDeductionsChannels.innerHTML += h;
+        });
+        ui.reportDeductionsForm.style.display = 'block';
+      },
+
+      async saveDeductions() {
+        const dStr = ui.reportDate.value;
+        if (!dStr) return;
+        const data = { channels: {} };
+        ui.reportDeductionsForm.querySelectorAll('input[data-channel]').forEach(i => {
+          const c = i.dataset.channel, k = i.dataset.key, v = parseFloat(i.value) || 0;
+          if (v > 0) {
+            if (!data.channels[c]) data.channels[c] = {};
+            data.channels[c][k] = v;
+          }
+        });
+        try {
+          await setDoc(doc(db, paths.deductions(dStr)), data);
+          state.reportCache.deductions = data.channels;
+          this.renderReportSummary();
+          this.showMessage('สำเร็จ','บันทึกค่าใช้จ่ายแล้ว','success');
+        } catch (e) {
+          console.error("Save deductions error:", e);
+          this.showMessage('ผิดพลาด', `บันทึกไม่ได้: ${e.message}`, 'error');
+        }
+      },
+
+      exportReportToExcel() {
+        const dStr = ui.reportDate.value;
+        if (!dStr) return this.showMessage('ผิดพลาด','เลือกวันที่','error');
+        this.showMessage('กำลัง Export','รอสักครู่...','success');
+        (async () => {
+          try {
+            const [sales, deds] = await Promise.all([this.fetchSalesForDate(dStr), this.fetchDeductionsForDate(dStr)]);
+            if (sales.length === 0) return this.showMessage('ไม่มีข้อมูล', `ไม่พบยอดขาย ${dStr}`, 'error');
+            this.generateExcelCSV(sales, deds, dStr);
+            this.closeMessageModal();
+          } catch (e) {
+            console.error("Export error:", e);
+            this.showMessage('ผิดพลาด', `Export ไม่ได้: ${e.message}`, 'error');
+          }
+        })();
+      },
+
+      generateExcelCSV(sales, deds, dStr) {
+        let csv = "\uFEFF";
+        csv += `"รายละเอียดขาย ${dStr}"\r\n`;
+        const sHead = ["วันที่","เวลา","ช่องทาง","สินค้า","จำนวน","ราคา/หน่วย","รวม"];
+        csv += sHead.map(h => `"${h}"`).join(',') + "\r\n";
+
+        sales.forEach(s => {
+          if (!s?.createdAt?.toDate || !s.items) return;
+          const ts = s.createdAt.toDate();
+          const d = ts.toLocaleDateString('th-TH');
+          const t = ts.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+          const chan = `"${(s.salesChannel || '').replace(/"/g,'""')}"`;
+          s.items.forEach(i => {
+            const name = `"${(i.name || '').replace(/"/g,'""')}"`;
+            csv += [d, t, chan, name, i.qty || 0, (i.price || 0).toFixed(2), (i.qty * (i.price || 0)).toFixed(2)].join(',') + "\r\n";
+          });
+        });
+
+        csv += `\r\n\r\n"สรุปค่าใช้จ่าย ${dStr}"\r\n`;
+        const dHead = ["ช่องทาง","GP","ส่วนลด","โฆษณา","คอมฯ","การตลาด","รวม"];
+        csv += dHead.map(h => `"${h}"`).join(',') + "\r\n";
+
+        let totalD = 0;
+        const dKeys = ['gp','discount','ad','commission','marketing'];
+        const allChans = {};
+        sales.forEach(s => allChans[s.salesChannel] = true);
+        Object.keys(deds).forEach(c => allChans[c] = true);
+
+        Object.keys(allChans).sort().forEach(c => {
+          const cDed = deds[c] || {};
+          let cTotal = 0;
+          const row = [`"${c.replace(/"/g,'""')}"`];
+          dKeys.forEach(k => {
+            const v = cDed[k] || 0;
+            row.push(v.toFixed(2));
+            cTotal += v;
+          });
+          row.push(cTotal.toFixed(2));
+          csv += row.join(',') + "\r\n";
+          totalD += cTotal;
+        });
+        csv += ["\"รวม\"","","","","","", totalD.toFixed(2)].join(',') + "\r\n";
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `report_${dStr}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      },
+
+      chartTooltipLabel(ctx) {
+        let l = ctx.dataset.label || '';
+        if (l) l += ': ';
+        if (ctx.parsed.y !== null) l += ctx.parsed.y.toLocaleString('th-TH', { style: 'currency', currency: 'THB' });
+        return l;
+      },
+
+      // ---------- Modal ----------
+      showMessage(t, tx, ty = 'success') {
+        ui.messageTitle.textContent = t;
+        ui.messageText.textContent = tx;
+        const iMap = { success: ['m4.5 12.75 6 6 9-13.5','green'], error: ['M6 18 18 6M6 6l12 12','red'] };
+        const [d,c] = iMap[ty] || iMap.error;
+        ui.messageIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-${c}-600"><path stroke-linecap="round" stroke-linejoin="round" d="${d}" /></svg>`;
+        ui.messageIcon.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-${c}-100`;
+        ui.messageModal.classList.remove('hidden');
+      },
+      closeMessageModal() { ui.messageModal.classList.add('hidden'); },
+    };
+
+    window.App = App;
+    App.init();
+  </script>
+</body>
+</html>

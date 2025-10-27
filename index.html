@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>เข้าสู่ระบบ - ไก่ทอดสมหวัง</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Kanit', 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="flex items-center justify-center min-h-screen">
+    <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
+      <h1 class="text-2xl md:text-3xl font-bold text-red-600 text-center mb-6">ไก่ทอดสมหวัง POS</h1>
+      <h2 class="text-xl font-semibold mb-6 text-center">เข้าสู่ระบบ</h2>
+      <form id="login-form">
+        <div class="mb-4">
+          <label for="login-email" class="block text-sm font-medium text-gray-700">อีเมล</label>
+          <input type="email" id="login-email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
+        </div>
+        <div class="mb-6">
+          <label for="login-password" class="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
+          <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
+        </div>
+        <p id="login-error" class="text-red-500 text-sm mb-4 hidden"></p>
+        <button type="submit" id="login-button" class="w-full bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 disabled:opacity-50">
+          เข้าสู่ระบบ
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    // *** ใช้ config ของโปรเจกต์คุณ ***
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJu7wfnlsAYPKjaVnhc5DNrLEJQgNDd3Q",
+      authDomain: "pos-project-a1e47.firebaseapp.com",
+      projectId: "pos-project-a1e47",
+      storageBucket: "pos-project-a1e47.firebasestorage.app",
+      messagingSenderId: "841375598650",
+      appId: "1:841375598650:web:c88e08e4deab8a0eba4d03",
+      measurementId: "G-7PHC2ELKB4"
+    };
+
+    let app, auth;
+
+    const loginForm   = document.getElementById('login-form');
+    const loginButton = document.getElementById('login-button');
+    const loginError  = document.getElementById('login-error');
+
+    try {
+      app  = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+    } catch (e) {
+      console.error("Firebase init error:", e);
+      if (loginError) {
+        loginError.textContent = `Firebase Init Error: ${e.message}`;
+        loginError.classList.remove('hidden');
+      }
+    }
+
+    // ถ้าเคยล็อกอินแล้ว ให้ไปหน้า POS ทันที
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.location.href = 'fried-chicken-pos.html';
+      }
+    });
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!auth) {
+        loginError.textContent = "Firebase Auth ยังไม่พร้อมใช้งาน";
+        loginError.classList.remove('hidden');
+        return;
+      }
+
+      const email    = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      loginError.classList.add('hidden');
+      loginButton.disabled = true;
+      loginButton.textContent = "กำลังเข้าสู่ระบบ...";
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = 'fried-chicken-pos.html';
+      } catch (error) {
+        console.error("Login failed:", error);
+        loginError.textContent = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+        loginError.classList.remove('hidden');
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = "เข้าสู่ระบบ";
+      }
+    });
+  </script>
+</body>
+</html>

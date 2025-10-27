@@ -1,0 +1,4 @@
+[functions]
+  node_bundler = "esbuild"   # ให้ Netlify bundle dependencies ให้
+
+# (ถ้าอยากมี Cron ภายหลังค่อยเพิ่มที่นี่)
